@@ -24,6 +24,7 @@ const App = () => {
     setNewPhone('')
   }
 
+  // TODO: Fix so only success messages are auto-hidden
   const hideNotification = (seconds=5) => {
     setTimeout(() => {
       setNotificationMsg('')
@@ -40,6 +41,19 @@ const App = () => {
     event.preventDefault()
     const message = `${newName} is already in the phonebook, do you want to update the number?`
 
+    const messageSuccess = () => {
+      setIsError(false)
+      setNotificationMsg(`${newName} has been saved to the phone book.`)
+      // hideNotification()
+      clearFields()
+    }
+
+    const messageError = (error) => {
+      console.log(error.response.data)
+      setIsError(true)
+      setNotificationMsg(`${error.response.data.error}`)
+    }
+
     if(duplicateName(newName, people)) {
       if(window.confirm(message)) {      
         const id = people
@@ -51,19 +65,20 @@ const App = () => {
           .update(id, newName, newPhone)
           .then(returnedPerson => {
             setPeople(people.map(person => person.id !== id ? person : returnedPerson))
+            
+            setIsError(false)
+            setNotificationMsg(`${newName} has been updated in the phone book.`)
+            hideNotification()
+            clearFields()
           })
-
-          setNotificationMsg(`${newName} has been updated in the phone book.`)
-          hideNotification()
+          .catch(error => messageError(error))
       }
     }
     else {
       peopleService.add(newName, newPhone, people, setPeople)
         .then(people => setPeople(people))
-
-      setNotificationMsg(`${newName} has been saved to the phone book.`)
-      hideNotification()
-      clearFields()
+        .then(messageSuccess())
+        .catch(error => messageError(error))
     }
   }
 
